@@ -1,0 +1,263 @@
+&---------------------------------------------------------------------*
+*& Report  ZCUST_PF
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT zcust_pf.
+
+TABLES: knvp.
+
+TYPES: BEGIN OF st_knvp,
+         kunnr TYPE kunnr,     "Sold To Party
+         vkorg TYPE vkorg,     "Sales Organization
+         vtweg TYPE vtweg,     "Distribution Channel
+         spart TYPE spart,     "Division
+         parvw TYPE parvw,     "Partner Function
+
+         mandt TYPE mandt,     "Client
+         parza TYPE parza,     "Partner counter
+         kunn2 TYPE kunn2,     "Customer
+         lifnr TYPE lifnr,     "Vendor
+         pernr TYPE pernr,     "Personal No.
+         parnr TYPE parnr,     "Contact Person
+         knref TYPE knref,     "Partner Desc.
+         defpa TYPE defpa,     "Default Partner
+
+       END OF st_knvp.
+
+
+
+DATA: it_knvp TYPE TABLE OF st_knvp,
+      wa_knvp TYPE st_knvp.
+
+DATA: t_fieldcat TYPE slis_t_fieldcat_alv WITH HEADER LINE.
+
+DATA: w_callback_subroutine TYPE slis_formname,
+      w_callback_program    LIKE sy-repid,
+      gd_layout             TYPE slis_layout_alv.
+
+
+
+*Program selection
+SELECTION-SCREEN: BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+
+
+SELECT-OPTIONS: s_kunnr FOR knvp-kunnr,
+                s_vkorg FOR knvp-vkorg,
+                s_vtweg FOR knvp-vtweg,
+                s_spart FOR knvp-spart,
+                s_parvw FOR knvp-parvw.
+
+SELECTION-SCREEN: END OF BLOCK b1.
+
+
+START-OF-SELECTION.
+
+  PERFORM get_output_data.
+  PERFORM build_catalog.
+  PERFORM grid_display.
+
+
+END-OF-SELECTION.
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  GRID_DISPLAY
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM grid_display .
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+*     I_INTERFACE_CHECK       = ' '
+*     I_BYPASSING_BUFFER      = ' '
+*     I_BUFFER_ACTIVE         = ' '
+      i_callback_program      = sy-cprog
+*     I_CALLBACK_PF_STATUS_SET          = ' '
+      i_callback_user_command = w_callback_subroutine
+*     I_CALLBACK_TOP_OF_PAGE  = ' '
+*     I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*     I_CALLBACK_HTML_END_OF_LIST       = ' '
+*     I_STRUCTURE_NAME        =
+*     I_BACKGROUND_ID         = ' '
+*     I_GRID_TITLE            =
+*     I_GRID_SETTINGS         =
+      is_layout               = gd_layout
+      it_fieldcat             = t_fieldcat[]
+*     IT_EXCLUDING            =
+*     IT_SPECIAL_GROUPS       =
+*     IT_SORT                 =
+*     IT_FILTER               =
+*     IS_SEL_HIDE             =
+*     I_DEFAULT               = 'X'
+*     I_SAVE                  = ' '
+*     IS_VARIANT              =
+*     IT_EVENTS               =
+*     IT_EVENT_EXIT           =
+*     IS_PRINT                =
+*     IS_REPREP_ID            =
+*     I_SCREEN_START_COLUMN   = 0
+*     I_SCREEN_START_LINE     = 0
+*     I_SCREEN_END_COLUMN     = 0
+*     I_SCREEN_END_LINE       = 0
+*     I_HTML_HEIGHT_TOP       = 0
+*     I_HTML_HEIGHT_END       = 0
+*     IT_ALV_GRAPHICS         =
+*     IT_HYPERLINK            =
+*     IT_ADD_FIELDCAT         =
+*     IT_EXCEPT_QINFO         =
+*     IR_SALV_FULLSCREEN_ADAPTER        =
+*   IMPORTING
+*     E_EXIT_CAUSED_BY_CALLER =
+*     ES_EXIT_CAUSED_BY_USER  =
+    TABLES
+      t_outtab                = it_knvp
+    EXCEPTIONS
+      program_error           = 1
+      OTHERS                  = 2.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+    WRITE: /'The number of error is: ', sy-subrc.
+
+  ENDIF.
+
+ENDFORM.
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  GET_OUTPUT_DATA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM get_output_data .
+
+  SELECT kunnr vkorg  vtweg spart parvw mandt
+         parza kunn2 lifnr pernr parnr knref defpa
+                                       FROM knvp INTO TABLE it_knvp
+                                       WHERE kunnr IN s_kunnr AND
+                                             vkorg IN s_vkorg AND
+                                             vtweg IN s_vtweg AND
+                                             spart IN s_spart AND
+                                             parvw IN s_parvw.
+
+
+ENDFORM.
+
+
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  BUILD_CATALOG
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM build_catalog .
+
+  t_fieldcat-fieldname = 'KUNNR'.
+  t_fieldcat-seltext_m = 'Customer'.
+  t_fieldcat-col_pos = 1.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'VKORG'.
+  t_fieldcat-seltext_m = 'Sales Organization'.
+  t_fieldcat-col_pos = 2.
+  t_fieldcat-outputlen = '12'.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'VTWEG'.
+  t_fieldcat-seltext_m = 'Distribution Channel'.
+  t_fieldcat-col_pos = 3.
+  t_fieldcat-outputlen = '12'.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'SPART'.
+  t_fieldcat-seltext_m = 'Division'.
+  t_fieldcat-col_pos = 4.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'PARVW'.
+  t_fieldcat-seltext_m = 'Partner Functn'.
+  t_fieldcat-col_pos = 5.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'PARZA'.
+  t_fieldcat-seltext_m = 'Partner Counter'.
+  t_fieldcat-col_pos = 6.
+  t_fieldcat-lzero = 'X'.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'KUNN2'.
+  t_fieldcat-seltext_m = 'Customer'.
+  t_fieldcat-col_pos = 7.
+  t_fieldcat-emphasize = 'X'.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'LIFNR'.
+  t_fieldcat-seltext_m = 'Vendor'.
+  t_fieldcat-col_pos = 8.
+  t_fieldcat-emphasize = 'X'.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'PERNR'.
+  t_fieldcat-seltext_m = 'Personnel No.'.
+  t_fieldcat-col_pos = 9.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'PARNR'.
+  t_fieldcat-seltext_m = 'Contact Person'.
+  t_fieldcat-col_pos = 10.
+  t_fieldcat-lzero = 'X'.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'KNREF'.
+  t_fieldcat-seltext_m = 'Partner Desc.'.
+  t_fieldcat-col_pos = 11.
+  t_fieldcat-outputlen = '30'.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+  t_fieldcat-fieldname = 'DEFPA'.
+  t_fieldcat-seltext_m = 'Default Partner'.
+  t_fieldcat-col_pos = 12.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+ENDFORM.
